@@ -9,7 +9,7 @@
 import re
 import read_raw_data
 
-preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', read_raw_data.raw_text)
+preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', read_raw_data.raw_text) #
 preprocessed = [item.strip() for item in preprocessed if item.strip()]
 print(len(preprocessed))
 print(preprocessed[:30])
