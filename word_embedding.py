@@ -3,17 +3,22 @@
 # 2. 导入 tiktoken 库，这是一个用于处理文本编码的库，特别适用于处理与 OpenAI 模型相关的文本编码
 # 3. 使用 version 函数获取 tiktoken 库的版本信息，并打印出来，以确认当前使用的 tiktoken 版本
 
-from importlib.metadata import version
+
+
+# 导入 importlib.metadata 模块中的 version 函数，用于获取已安装库的版本信息
+from importlib.metadata import version 
+# 导入 tiktoken 库，这是一个用于处理文本编码的库，特别适用于处理与 OpenAI 模型相关的文本编码
 import tiktoken
 
 print("tiktoken version:", version("tiktoken"))
-
-tokenizer = tiktoken.get_encoding("gpt2")
+# 获取 GPT-2 模型使用的编码器，这个编码器将文本转换为整数 ID 的形式，适用于 GPT-2 模型的输入
+tokenizer = tiktoken.get_encoding("gpt2") 
 
 text = (
     "Hello, do you like tea? <|endoftext|> In the sunlit terraces"
      "of someunknownPlace."
 )
+# 使用 tokenizer 的 encode 方法将文本转换为整数 ID 的列表，allowed_special 参数指定允许的特殊标记，这里允许 "<|endoftext|>" 作为特殊标记
 integers = tokenizer.encode(text, allowed_special={"<|endoftext|>"})
 print(integers) 
 
