@@ -1,12 +1,22 @@
+# 说明：
+# 1. 该代码实现了一个基于 Transformer 架构的 GPT 模型，包含了多头注意力机制、前馈神经网络、层归一化等组件。
+# 2. 模型的配置参数（如词汇表大小、上下文长度、嵌入维度、注意力头数、层数、Dropout 比例等）被定义在 GPT_CONFIG_124M 字典中。
+# 3. 模型的前向传播过程包括了输入的嵌入、位置编码、多层 Transformer 块的处理、最终的归一化和输出头的线性变换。
+# 可优化点：
+# 1. 可以添加更多的注释来解释每个组件的功能和实现细节，以提高代码的可读性。
+# 2. 可以添加更多的测试用例来验证模型的功能和性能，例如测试不同输入文本的生成结果，或者比较不同配置下模型的输出差异。
+# 3. 可以添加训练代码来训练模型，并评估其在文本生成任务上的性能，例如使用交叉熵损失函数和优化器来更新模型参数，并在验证集上评估生成文本的质量。
 
 
+
+# 导入所需的库和模块
 import tiktoken
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from multi_head_attention import MultiHeadAttention
 
-
+# 定义 GPT 模型的配置参数，包括词汇表大小、上下文长度、嵌入维度、注意力头数、层数、Dropout 比例和查询-键-值偏置等
 GPT_CONFIG_124M = {
     "vocab_size": 50257,    # Vocabulary size
     "context_length": 1024, # Context length
@@ -16,36 +26,39 @@ GPT_CONFIG_124M = {
     "drop_rate": 0.1,       # Dropout rate
     "qkv_bias": False       # Query-Key-Value bias
 }
-#初始化定义需要的各种超参数
 
-
+# 定义层归一化类 LayerNorm，用于对输入张量进行归一化处理
 class LayerNorm(nn.Module):
-    #layer归一化的函数,可以避免信息泄露也可以稳定
+
+    # 初始化 LayerNorm 类，接受嵌入维度作为参数，并定义可学习的缩放参数和偏移参数
     def __init__(self, emb_dim):
         super().__init__()
-        self.eps = 1e-5 #避免0的产生导致崩溃
-        self.scale = nn.Parameter(torch.ones(emb_dim)) #动态的缩放参数
-        self.shift = nn.Parameter(torch.zeros(emb_dim)) #动态的偏移参数
+        self.eps = 1e-5
+        self.scale = nn.Parameter(torch.ones(emb_dim))
+        self.shift = nn.Parameter(torch.zeros(emb_dim)) 
 
+    # 运行前向传播，计算输入张量的均值和方差，并应用归一化、缩放和偏移操作
     def forward(self, x):
-        mean = x.mean(dim=-1, keepdim=True)#算平均值
-        var = x.var(dim=-1, keepdim=True, unbiased=False)#算方差
-        norm_x = (x - mean) / torch.sqrt(var + self.eps)#归一化
-        return self.scale * norm_x + self.shift #通过Ω和  œ 调整归一化后的值范围和位置
+        mean = x.mean(dim=-1, keepdim=True)
+        var = x.var(dim=-1, keepdim=True, unbiased=False)
+        norm_x = (x - mean) / torch.sqrt(var + self.eps)
+        return self.scale * norm_x + self.shift
 
 
+# 定义 GELU 激活函数类，继承自 nn.Module，并实现前向传播方法，使用 GELU 函数对输入张量进行非线性变换
 class GELU(nn.Module):
     def __init__(self):
         super().__init__()
 
     def forward(self, x):
+        # GELU 函数的近似公式为：0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
         return 0.5 * x * (1 + torch.tanh(
-            #这一步把它变得平滑了很多
             torch.sqrt(torch.tensor(2.0 / torch.pi)) * 
             (x + 0.044715 * torch.pow(x, 3))
         ))
 
 
+# 定义前馈神经网络类 FeedForward，包含两个线性层和一个 GELU 激活函数，用于在 Transformer 块中对输入进行非线性变换
 class FeedForward(nn.Module):
     def __init__(self, cfg):
         super().__init__()
@@ -54,72 +67,71 @@ class FeedForward(nn.Module):
             GELU(),
             nn.Linear(4 * cfg["emb_dim"], cfg["emb_dim"]),
         )
-    #运行一次就线性两次激活一次
+
     def forward(self, x):
         return self.layers(x)
 
 
+# 定义 Transformer 块类 TransformerBlock，包含一个多头注意力模块、一个前馈神经网络模块、两个层归一化层和一个残差连接的 Dropout 模块，用于在 GPT 模型中构建多个 Transformer 块
 class TransformerBlock(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.att = MultiHeadAttention(
-            d_in=cfg["emb_dim"],               # 输入特征维度
-            d_out=cfg["emb_dim"],              # 输出特征维度
+            d_in=cfg["emb_dim"],                   # 输入特征维度
+            d_out=cfg["emb_dim"],                  # 输出特征维度
             context_length=cfg["context_length"],  # 上下文长度
-            num_heads=cfg["n_heads"],          # 注意力头的数量
-            dropout=cfg["drop_rate"],          # Dropout 比例
-            qkv_bias=cfg["qkv_bias"]           # 查询、键和值的偏置
-        )  # 多头注意力模块，结合各种参数
-        self.ff = FeedForward(cfg)  # 前馈神经网络模块
-        self.norm1 = LayerNorm(cfg["emb_dim"])  # 第一归一化层
-        self.norm2 = LayerNorm(cfg["emb_dim"])  # 第二归一化层
-        self.drop_shortcut = nn.Dropout(cfg["drop_rate"])  # 残差连接的 Dropout
+            num_heads=cfg["n_heads"],              # 注意力头的数量
+            dropout=cfg["drop_rate"],              # Dropout 比例
+            qkv_bias=cfg["qkv_bias"]               # 查询、键和值的偏置
+        ) 
+        self.ff = FeedForward(cfg) 
+        self.norm1 = LayerNorm(cfg["emb_dim"])
+        self.norm2 = LayerNorm(cfg["emb_dim"]) 
+        self.drop_shortcut = nn.Dropout(cfg["drop_rate"])
 
     def forward(self, x):
-        # 对注意力模块的快捷连接
+        
+        # 对多头注意力模块的残差连接
         shortcut = x
-        x = self.norm1(x)  # 应用第一归一化层
-        x = self.att(x)  # 通过多头注意力模块，形状为 [batch_size, num_tokens, emb_size]
-        x = self.drop_shortcut(x)  # 应用 Dropout
-        x = x + shortcut  # 将原始输入加回，实现残差连接
+        x = self.norm1(x)
+        x = self.att(x) 
+        x = self.drop_shortcut(x) 
+        x = x + shortcut
 
         # 对前馈网络模块的残差连接
         shortcut = x
-        x = self.norm2(x)  # 应用第二归一化层
-        x = self.ff(x)  # 通过前馈神经网络模块
-        x = self.drop_shortcut(x)  # 应用 Dropout
-        x = x + shortcut  # 将原始输入加回，实现残差连接
+        x = self.norm2(x)
+        x = self.ff(x) 
+        x = self.drop_shortcut(x) 
+        x = x + shortcut
 
         return x
 
 
-class GPTModel(nn.Module):#召唤GPT!
+
+# 定义 GPT 模型类 GPTModel，包含输入嵌入层、位置嵌入层、多个 Transformer 块、最终的层归一化和输出头，用于实现基于 Transformer 架构的 GPT 模型
+class GPTModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
+        # 定义输入嵌入层和位置嵌入层，输入嵌入层将词汇索引转换为嵌入向量，位置嵌入层为每个位置生成一个嵌入向量，以便模型能够捕捉位置信息
         self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"])
         self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
         self.drop_emb = nn.Dropout(cfg["drop_rate"])
-        #新建字典、位置信息、还有dropout的比率设置
+        # 定义多个 Transformer 块，使用 nn.Sequential 来堆叠多个 TransformerBlock 实例，数量由 cfg["n_layers"] 决定，解包操作将列表中的每个 TransformerBlock 实例作为单独的参数传递给 nn.Sequential
         self.trf_blocks = nn.Sequential(
             *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])])
-        #解包操作
-
-        self.trf_blocks = nn.Sequential(
-        TransformerBlock(cfg),
-        TransformerBlock(cfg),
-        TransformerBlock(cfg)
-                )
+        # 定义最终的层归一化和输出头，层归一化用于对 Transformer 块的输出进行归一化处理，输出头是一个线性层，将嵌入维度转换为词汇表大小，以便生成文本时能够预测每个位置的下一个词汇的概率分布
         self.final_norm = LayerNorm(cfg["emb_dim"])
-        #归一化
         self.out_head = nn.Linear(
             cfg["emb_dim"], cfg["vocab_size"], bias=False
         )
-        #输出头保证维度
+
+    # 定义前向传播方法，接受输入索引张量 in_idx，计算输入的嵌入和位置嵌入，将它们相加后通过 Dropout 进行正则化，然后依次通过多个 Transformer 块进行处理，最后通过层归一化和输出头得到预测的词汇分布 logits，并返回 logits
     def forward(self, in_idx):
         batch_size, seq_len = in_idx.shape
         tok_embeds = self.tok_emb(in_idx)
         pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
-        x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
+        x = tok_embeds + pos_embeds
         x = self.drop_emb(x)
         x = self.trf_blocks(x)
         x = self.final_norm(x)
@@ -127,9 +139,8 @@ class GPTModel(nn.Module):#召唤GPT!
         return logits
     
 
-# 测试 GPTModel 类的功能
+# 测试 GPTModel 类的功能，首先使用 tiktoken 库获取 GPT-2 模型的编码器，然后将两个文本输入编码为整数索引，并将它们堆叠成一个批次输入到模型中，最后打印输入批次和模型输出的形状以及输出内容，并计算模型的总参数数量
 tokenizer = tiktoken.get_encoding("gpt2")
-#召唤gpt大神
 batch = []
 
 txt1 = "Every effort moves you"
@@ -137,54 +148,35 @@ txt2 = "Every day holds a"
 
 batch.append(torch.tensor(tokenizer.encode(txt1)))
 batch.append(torch.tensor(tokenizer.encode(txt2)))
-#编码输入文本
 batch = torch.stack(batch, dim=0)
-#按照横向来叠加两个向量
 print(batch)
 
-
+# 创建 GPTModel 实例，并将批次输入传递给模型进行前向传播，打印输出的形状和内容，以及模型的总参数数量
 torch.manual_seed(123)
 model = GPTModel(GPT_CONFIG_124M)
-
 out = model(batch)
-print("Input batch:\n", batch)
-print("\nOutput shape:", out.shape)
 print(out)
-#经典操作
-
+print(out.shape)
+# 输出的形状为 (batch_size, seq_len, vocab_size)，其中 batch_size 是输入批次的大小，seq_len 是输入序列的长度，vocab_size 是词汇表的大小
 total_params = sum(p.numel() for p in model.parameters())
-#模型的总参数数量
 print(f"Total number of parameters: {total_params:,}")
 
 
+# 定义一个简单的文本生成函数 generate_text_simple，接受模型、输入索引、最大新令牌数量和上下文大小作为参数，在每次迭代中使用模型预测下一个词汇的概率分布，并选择概率最高的词汇作为下一个输入，最终返回生成的文本索引序列
 def generate_text_simple(model, idx, max_new_tokens, context_size):
-    # 预测单词的模块
-    # idx 是当前上下文中的（batch, n_tokens）索引数组
     for _ in range(max_new_tokens):
-        # 每次生成一个单词后，重新将其加入序列中
-        # 如果当前上下文长度超过模型支持的最大上下文长度，则截取
-        # 例如，如果LLM只支持5个token，而上下文长度为10
-        # 那么只使用最后5个token作为上下文
         idx_cond = idx[:, -context_size:]
-        # 如果idx的长度超过模型支持的上下文长度size，只保留最后size个token
-        # 避免溢出
-        # 获取预测结果
-        with torch.no_grad():  # 在推理阶段，不需要计算梯度，因为没有反向传播
-            # 这样可以减少存储开销
+        # 在生成过程中不需要计算梯度，因此使用 torch.no_grad() 上下文管理器来禁用梯度计算，以节省内存和提高性能
+        with torch.no_grad(): 
             logits = model(idx_cond)
-            # 模型输出结果
-        # 只关注最后一个时间步的输出
-        # (batch, n_tokens, vocab_size) 变为 (batch, vocab_size)
+
         logits = logits[:, -1, :]
-        # 关注最后一个时间步
-        # 使用softmax函数计算概率
-        probas = torch.softmax(logits, dim=-1)  # (batch, vocab_size)
-        # 归一化
-        # 获取具有最高概率值的词汇索引
-        idx_next = torch.argmax(probas, dim=-1, keepdim=True)  # (batch, 1)
-        # 获取概率最高的词汇索引
-        # 将采样的索引添加到序列中
-        idx = torch.cat((idx, idx_next), dim=1)  # (batch, n_tokens+1)
+        probas = torch.softmax(logits, dim=-1)  
+        idx_next = torch.argmax(probas, dim=-1, keepdim=True)
+        print("idx_next:", idx_next)
+        print("idx:", idx) 
+        idx = torch.cat((idx, idx_next), dim=1)
+        print("new idx:", idx)  
 
     return idx
 
