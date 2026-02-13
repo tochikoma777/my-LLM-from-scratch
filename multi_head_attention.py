@@ -5,6 +5,7 @@
 # 2. 可以添加更多的功能，例如支持不同类型的注意力机制（如多头交叉注意力）、支持不同的输入格式（如批量输入）等，以提高模型的灵活性和适用性。
 
 
+
 import torch
 import torch.nn as nn
 
@@ -62,7 +63,7 @@ class MultiHeadAttention(nn.Module):
         return context_vec
 
 # 测试 MultiHeadAttention 类的功能
-torch.manual_seed(123)
+""" torch.manual_seed(123)
 
 inputs = torch.tensor(
   [[0.43, 0.15, 0.89], 
@@ -81,4 +82,4 @@ mha = MultiHeadAttention(d_in, d_out, context_length, 0.0, num_heads=2)
 context_vecs = mha(batch)
 
 print(context_vecs)
-print("context_vecs.shape:", context_vecs.shape)
+print("context_vecs.shape:", context_vecs.shape) """

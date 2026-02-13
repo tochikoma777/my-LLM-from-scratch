@@ -140,7 +140,7 @@ class GPTModel(nn.Module):
     
 
 # 测试 GPTModel 类的功能，首先使用 tiktoken 库获取 GPT-2 模型的编码器，然后将两个文本输入编码为整数索引，并将它们堆叠成一个批次输入到模型中，最后打印输入批次和模型输出的形状以及输出内容，并计算模型的总参数数量
-tokenizer = tiktoken.get_encoding("gpt2")
+""" tokenizer = tiktoken.get_encoding("gpt2")
 batch = []
 
 txt1 = "Every effort moves you"
@@ -159,7 +159,7 @@ print(out)
 print(out.shape)
 # 输出的形状为 (batch_size, seq_len, vocab_size)，其中 batch_size 是输入批次的大小，seq_len 是输入序列的长度，vocab_size 是词汇表的大小
 total_params = sum(p.numel() for p in model.parameters())
-print(f"Total number of parameters: {total_params:,}")
+print(f"Total number of parameters: {total_params:,}") """
 
 
 # 定义一个简单的文本生成函数 generate_text_simple，接受模型、输入索引、最大新令牌数量和上下文大小作为参数，在每次迭代中使用模型预测下一个词汇的概率分布，并选择概率最高的词汇作为下一个输入，最终返回生成的文本索引序列
@@ -173,37 +173,33 @@ def generate_text_simple(model, idx, max_new_tokens, context_size):
         logits = logits[:, -1, :]
         probas = torch.softmax(logits, dim=-1)  
         idx_next = torch.argmax(probas, dim=-1, keepdim=True)
-        print("idx_next:", idx_next)
-        print("idx:", idx) 
+        # print("idx_next:", idx_next)
+        # print("idx:", idx) 
         idx = torch.cat((idx, idx_next), dim=1)
-        print("new idx:", idx)  
+        # print("new idx:", idx)  
 
     return idx
 
-start_context = "Hello, I am"
-#模拟
+
+# 测试文本生成函数 generate_text_simple，首先定义一个初始文本并将其编码为整数索引，然后将编码后的索引转换为张量并添加批次维度，最后调用 generate_text_simple 函数生成新的文本索引序列，并使用 tokenizer 将生成的索引序列解码回文本形式进行输出
+""" start_context = "Hello, I am"
 encoded = tokenizer.encode(start_context)
 print("encoded:", encoded)
-#进行语义理解
 encoded_tensor = torch.tensor(encoded).unsqueeze(0)
 print("encoded_tensor.shape:", encoded_tensor.shape)
-#最终输出格式
 
 
-model.eval() # disable dropout
-#在检验的时候不需要正则化了
+# 将模型设置为评估模式，以禁用 Dropout 和其他训练特定的行为，然后调用 generate_text_simple 函数生成新的文本索引序列，并打印输出的索引序列和长度，以及解码后的文本内容
+model.eval() 
 out = generate_text_simple(
     model=model,
-    #左边的参数名字,右边是函数传入的实际模型
-    idx=encoded_tensor, #上下文的索引
-    max_new_tokens=6, #最多运行六次,然后取结果概率最高的
-    #初始文本➕6
+    idx=encoded_tensor, 
+    max_new_tokens=6,
     context_size=GPT_CONFIG_124M["context_length"]
 )
 
 print("Output:", out)
 print("Output length:", len(out[0]))
-#输出长度还有每个单词的id
 
 decoded_text = tokenizer.decode(out.squeeze(0).tolist())
-print(decoded_text)
+print(decoded_text) """

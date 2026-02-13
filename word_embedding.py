@@ -1,10 +1,11 @@
+# 说明:
+# 1. 该代码示例展示了如何使用 tiktoken 库来编码文本，特别是针对 GPT-2 模型的编码器  
+# 可优化点:
+# 1. 可以添加异常处理来捕获可能的错误，例如在获取版本信息或编码文本时可能会发生的错误
+
+
+
 #pip install tiktoken
-# 1. 导入 importlib.metadata 模块中的 version 函数，用于获取已安装库的版本信息 
-# 2. 导入 tiktoken 库，这是一个用于处理文本编码的库，特别适用于处理与 OpenAI 模型相关的文本编码
-# 3. 使用 version 函数获取 tiktoken 库的版本信息，并打印出来，以确认当前使用的 tiktoken 版本
-
-
-
 # 导入 importlib.metadata 模块中的 version 函数，用于获取已安装库的版本信息
 from importlib.metadata import version 
 # 导入 tiktoken 库，这是一个用于处理文本编码的库，特别适用于处理与 OpenAI 模型相关的文本编码
