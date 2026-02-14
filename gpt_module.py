@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from multi_head_attention import MultiHeadAttention
+from random_sampling_outout import generate
 
 # 定义 GPT 模型的配置参数，包括词汇表大小、上下文长度、嵌入维度、注意力头数、层数、Dropout 比例和查询-键-值偏置等
 GPT_CONFIG_124M = {
@@ -203,3 +204,34 @@ print("Output length:", len(out[0]))
 
 decoded_text = tokenizer.decode(out.squeeze(0).tolist())
 print(decoded_text) """
+
+
+
+
+def text_to_token_ids(text, tokenizer):
+    encoded = tokenizer.encode(text, allowed_special={'<|endoftext|>'})
+    encoded_tensor = torch.tensor(encoded).unsqueeze(0)
+    return encoded_tensor
+
+def token_ids_to_text(token_ids, tokenizer):
+    flat = token_ids.squeeze(0) # remove batch dimension
+    return tokenizer.decode(flat.tolist())
+
+torch.manual_seed(123)
+tokenizer = tiktoken.get_encoding("gpt2")
+
+model = GPTModel(GPT_CONFIG_124M)
+token_ids = generate(
+    model=model,
+    idx=text_to_token_ids("Every effort moves you", tokenizer),
+    max_new_tokens=15,
+    context_size=GPT_CONFIG_124M["context_length"],
+    top_k=25,
+    temperature=1.4
+)
+
+print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+#经典的操作
+
+
+
