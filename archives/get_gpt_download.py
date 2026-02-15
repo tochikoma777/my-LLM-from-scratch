@@ -1,32 +1,26 @@
+# 说明：
+# 该代码用于下载并加载 GPT-2 模型的权重和配置文件。
+   
+
 import urllib.request
+# 1.下载 gpt_download.py 文件 
 from gpt_download import download_and_load_gpt2
-""" url = (
+url = (
     "https://raw.githubusercontent.com/rasbt/"
     "LLMs-from-scratch/main/ch05/"
     "01_main-chapter-code/gpt_download.py"
 )
+# 2.从 URL 中提取文件名并下载文件
 filename = url.split('/')[-1]
-urllib.request.urlretrieve(url, filename) """
+urllib.request.urlretrieve(url, filename)
+
+# 3.下载并加载 GPT-2 模型的权重和配置文件
+settings, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
 
 
-# settings, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
 
-
-
-""" from transformers import GPT2Model
-model_names = {
-    "gpt2-small (124M)": "openai-community/gpt2",
-    "gpt2-medium (355M)": "openai-community/gpt2-medium",
-    "gpt2-large (774M)": "openai-community/gpt2-large",
-    "gpt2-xl (1558M)": "openai-community/gpt2-xl"
-}
-
-CHOOSE_MODEL = "gpt2-small (124M)"
-
-gpt_hf = GPT2Model.from_pretrained(model_names[CHOOSE_MODEL], cache_dir="checkpoints")
-gpt_hf.eval() """
-
-
+""" # 说明：
+# 该代码用于设置环境变量以解决在中国大陆下载 Hugging Face 模型时遇到的 SSL 验证问题，并指定使用国内镜像源以加速下载过程。
 import os
 import ssl
 import urllib3
@@ -50,5 +44,5 @@ CHOOSE_MODEL = "124M"
 gpt_hf = GPT2Model.from_pretrained(
     model_names[CHOOSE_MODEL], 
     cache_dir="checkpoints",
-    trust_remote_code=True  # 额外添加，避免镜像源的小兼容问题
-)
+    trust_remote_code=True
+) """

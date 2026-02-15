@@ -1,12 +1,7 @@
 # 说明：
-# 1. 该代码实现了一个基于 Transformer 架构的 GPT 模型，包含了多头注意力机制、前馈神经网络、层归一化等组件。
-# 2. 模型的配置参数（如词汇表大小、上下文长度、嵌入维度、注意力头数、层数、Dropout 比例等）被定义在 GPT_CONFIG_124M 字典中。
-# 3. 模型的前向传播过程包括了输入的嵌入、位置编码、多层 Transformer 块的处理、最终的归一化和输出头的线性变换。
-# 可优化点：
-# 1. 可以添加更多的注释来解释每个组件的功能和实现细节，以提高代码的可读性。
-# 2. 可以添加更多的测试用例来验证模型的功能和性能，例如测试不同输入文本的生成结果，或者比较不同配置下模型的输出差异。
-# 3. 可以添加训练代码来训练模型，并评估其在文本生成任务上的性能，例如使用交叉熵损失函数和优化器来更新模型参数，并在验证集上评估生成文本的质量。
-
+# 该代码实现了一个基于 Transformer 架构的 GPT 模型，包含了多头注意力机制、前馈神经网络、层归一化等组件。
+# 模型的配置参数（如词汇表大小、上下文长度、嵌入维度、注意力头数、层数、Dropout 比例等）被定义在 GPT_CONFIG_124M 字典中。
+# 模型的前向传播过程包括了输入的嵌入、位置编码、多层 Transformer 块的处理、最终的归一化和输出头的线性变换。
 
 
 # 导入所需的库和模块
@@ -109,7 +104,6 @@ class TransformerBlock(nn.Module):
         return x
 
 
-
 # 定义 GPT 模型类 GPTModel，包含输入嵌入层、位置嵌入层、多个 Transformer 块、最终的层归一化和输出头，用于实现基于 Transformer 架构的 GPT 模型
 class GPTModel(nn.Module):
     def __init__(self, cfg):
@@ -138,7 +132,36 @@ class GPTModel(nn.Module):
         x = self.final_norm(x)
         logits = self.out_head(x)
         return logits
-    
+
+
+ # 定义一个简单的文本生成函数 generate_text_simple，接受模型、输入索引、最大新令牌数量和上下文大小作为参数，在每次迭代中使用模型预测下一个词汇的概率分布，并选择概率最高的词汇作为下一个输入，最终返回生成的文本索引序列
+def generate_text_simple(model, idx, max_new_tokens, context_size):
+    for _ in range(max_new_tokens):
+        idx_cond = idx[:, -context_size:]
+        # 在生成过程中不需要计算梯度，因此使用 torch.no_grad() 上下文管理器来禁用梯度计算，以节省内存和提高性能
+        with torch.no_grad(): 
+            logits = model(idx_cond)
+
+        logits = logits[:, -1, :]
+        probas = torch.softmax(logits, dim=-1)  
+        idx_next = torch.argmax(probas, dim=-1, keepdim=True)
+        # print("idx_next:", idx_next)
+        # print("idx:", idx) 
+        idx = torch.cat((idx, idx_next), dim=1)
+        # print("new idx:", idx)  
+
+    return idx
+
+
+def text_to_token_ids(text, tokenizer):
+    encoded = tokenizer.encode(text, allowed_special={'<|endoftext|>'})
+    encoded_tensor = torch.tensor(encoded).unsqueeze(0)
+    return encoded_tensor
+
+def token_ids_to_text(token_ids, tokenizer):
+    flat = token_ids.squeeze(0) # remove batch dimension
+    return tokenizer.decode(flat.tolist())
+
 
 # 测试 GPTModel 类的功能，首先使用 tiktoken 库获取 GPT-2 模型的编码器，然后将两个文本输入编码为整数索引，并将它们堆叠成一个批次输入到模型中，最后打印输入批次和模型输出的形状以及输出内容，并计算模型的总参数数量
 """ tokenizer = tiktoken.get_encoding("gpt2")
@@ -161,25 +184,6 @@ print(out.shape)
 # 输出的形状为 (batch_size, seq_len, vocab_size)，其中 batch_size 是输入批次的大小，seq_len 是输入序列的长度，vocab_size 是词汇表的大小
 total_params = sum(p.numel() for p in model.parameters())
 print(f"Total number of parameters: {total_params:,}") """
-
-
-# 定义一个简单的文本生成函数 generate_text_simple，接受模型、输入索引、最大新令牌数量和上下文大小作为参数，在每次迭代中使用模型预测下一个词汇的概率分布，并选择概率最高的词汇作为下一个输入，最终返回生成的文本索引序列
-def generate_text_simple(model, idx, max_new_tokens, context_size):
-    for _ in range(max_new_tokens):
-        idx_cond = idx[:, -context_size:]
-        # 在生成过程中不需要计算梯度，因此使用 torch.no_grad() 上下文管理器来禁用梯度计算，以节省内存和提高性能
-        with torch.no_grad(): 
-            logits = model(idx_cond)
-
-        logits = logits[:, -1, :]
-        probas = torch.softmax(logits, dim=-1)  
-        idx_next = torch.argmax(probas, dim=-1, keepdim=True)
-        # print("idx_next:", idx_next)
-        # print("idx:", idx) 
-        idx = torch.cat((idx, idx_next), dim=1)
-        # print("new idx:", idx)  
-
-    return idx
 
 
 # 测试文本生成函数 generate_text_simple，首先定义一个初始文本并将其编码为整数索引，然后将编码后的索引转换为张量并添加批次维度，最后调用 generate_text_simple 函数生成新的文本索引序列，并使用 tokenizer 将生成的索引序列解码回文本形式进行输出
@@ -207,16 +211,7 @@ print(decoded_text) """
 
 
 
-
-def text_to_token_ids(text, tokenizer):
-    encoded = tokenizer.encode(text, allowed_special={'<|endoftext|>'})
-    encoded_tensor = torch.tensor(encoded).unsqueeze(0)
-    return encoded_tensor
-
-def token_ids_to_text(token_ids, tokenizer):
-    flat = token_ids.squeeze(0) # remove batch dimension
-    return tokenizer.decode(flat.tolist())
-
+""" # 使用 generate 函数进行文本生成，首先设置随机种子以确保结果可复现，然后定义一个初始文本并将其编码为整数索引，最后调用 generate 函数生成新的文本索引序列，并使用 tokenizer 将生成的索引序列解码回文本形式进行输出
 torch.manual_seed(123)
 tokenizer = tiktoken.get_encoding("gpt2")
 
@@ -230,7 +225,7 @@ token_ids = generate(
     temperature=1.4
 )
 
-print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+print("Output text:\n", token_ids_to_text(token_ids, tokenizer)) """
 
 
 

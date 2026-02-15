@@ -1,3 +1,7 @@
+# 说明：
+# 该代码实现了一个基于 Transformer 架构的 GPT 模型，并将预训练的 GPT-2 模型参数加载到该模型中，以便进行文本生成任务。代码中包含了模型定义、权重加载以及文本生成的示例。
+
+
 # pip install tensorflow>=2.15.0  tqdm>=4.66
 from gpt_download import download_and_load_gpt2 # 会因为网络问题无法下载
 from gpt_module import GPTModel, GPT_CONFIG_124M
@@ -19,8 +23,7 @@ model_configs = {
     "gpt2-xl (1558M)": {"emb_dim": 1600, "n_layers": 48, "n_heads": 25},
 }
 #把每个大小的模型都与先载入并确定好
-# Copy the base configuration and update with specific model settings
-model_name = "gpt2-small (124M)"  # Example model name
+model_name = "gpt2-small (124M)" 
 NEW_CONFIG = GPT_CONFIG_124M.copy()
 NEW_CONFIG.update(model_configs[model_name])
 NEW_CONFIG.update({"context_length": 1024, "qkv_bias": True})
@@ -29,12 +32,13 @@ gpt = GPTModel(NEW_CONFIG)
 gpt.eval();
 
 
+# 定义一个辅助函数 assign，用于将预训练的权重参数加载到 GPT 模型中，确保形状匹配，并返回一个新的可学习参数。
 def assign(left, right):
     if left.shape != right.shape:
         raise ValueError(f"Shape mismatch. Left: {left.shape}, Right: {right.shape}")
     return torch.nn.Parameter(torch.tensor(right))
 
-
+# 定义一个函数 load_weights_into_gpt，用于将预训练的 GPT-2 模型参数加载到 GPT 模型中，包括位置嵌入、词嵌入、注意力权重、前馈网络权重、层归一化参数等，确保每个参数正确地映射到 GPT 模型的对应组件中。
 def load_weights_into_gpt(gpt, params):
     gpt.pos_emb.weight = assign(gpt.pos_emb.weight, params['wpe'])
     #位置权重
@@ -97,7 +101,7 @@ def load_weights_into_gpt(gpt, params):
     gpt.final_norm.shift = assign(gpt.final_norm.shift, params["b"])
     gpt.out_head.weight = assign(gpt.out_head.weight, params["wte"])
     
-#主要目的是将预训练的模型参数加载到一个gpt中
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("********************************************")
 print("Using device:", device)
@@ -107,6 +111,7 @@ load_weights_into_gpt(gpt, params)
 gpt.to(device);
 
 
+""" # 设置随机种子以确保结果可复现，并使用 tiktoken 库获取 GPT-2 模型的编码器，然后将一个文本输入编码为整数索引，并将其输入到模型中进行文本生成，最后打印生成的文本输出。
 torch.manual_seed(123)
 
 tokenizer = tiktoken.get_encoding("gpt2")
@@ -119,4 +124,4 @@ token_ids = generate(
     temperature=1.5
 )
 
-print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+print("Output text:\n", token_ids_to_text(token_ids, tokenizer)) """
