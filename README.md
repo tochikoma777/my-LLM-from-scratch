@@ -30,6 +30,12 @@
 - **灵活配置**: 通过配置文件轻松调整模型大小和训练参数
 - **详尽注释**: 每行关键代码均配有详细中文注释，便于学习和理解
 
+### 🎁 该项目对新手的帮助
+
+- 学习手搓大模型，了解大模型的基本架构、训练和指令微调，从零开始入门
+- 学习好的的GitHub项目结构，养成良好的项目开发规范
+- 学习如何编写好的README文件，此文档就可以作为一个入门的README模板
+
 ## 🚀 快速开始
 
 ### 环境要求
@@ -86,15 +92,28 @@ python module_fine_tuning.py --test_mode
 ## 📁 项目结构
 
 ```
-modules/
-├── data_preprocess.py              # 数据预处理：分词、数据集构建
-├── generate_text_simple.py         # 基础文本生成（贪婪解码）
-├── language_module.py              # GPT 模型架构定义
-├── module_train.py                 # 训练流程与评估
-├── module_load_param.py            # 预训练权重加载与增强生成
-├── module_fine_tuning.py           # 指令微调实现
-├── README.md                       # 本文件
-└── requirements.txt                # 依赖列表
+my-LLM-from-scratch/
+├── README.md                          # 项目总说明
+├── .gitignore                         # Git忽略文件配置
+│
+├── archives/                          # 项目历史文件
+│
+├── src/                               # 源代码目录
+│   ├── __init__.py
+│   │
+│   ├── models/                        # 模型定义
+│   │   ├── __init__.py
+│   │   ├── data_preprocess.py              # 数据预处理：分词、数据集构建
+│   │   ├── generate_text_simple.py         # 基础文本生成（贪婪解码）
+│   │   ├── language_module.py              # GPT 模型架构定义
+│   │   ├── module_train.py                 # 训练流程与评估
+│   │   ├── module_load_param.py            # 预训练权重加载与增强生成
+│   │   └── module_fine_tuning.py           # 指令微调实现
+│   │
+│   └── utils/                         # 工具函数
+│
+└── tests/                             # 测试目录
+    └── __init__.py
 ```
 
 ## 🔍 详细说明
@@ -300,7 +319,6 @@ model = torch.compile(model)
 
 3. **推荐学习资源**:
    - [LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch) - 本项目主要参考
-   - [The Illustrated Transformer](http://jalammar.github.io/illustrated-transformer/) - 可视化讲解
 
 ## 📄 许可证
 
