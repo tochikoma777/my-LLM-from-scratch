@@ -32,9 +32,9 @@
 
 ### 🎁 该项目对新手的帮助
 
-- 学习手搓大模型，了解大模型的基本架构、训练和指令微调，从零开始入门
-- 学习好的的GitHub项目结构，养成良好的项目开发规范
-- 学习如何编写好的README文件，此文档就可以作为一个入门的README模板
+- 苦于无法入门LLM？在这里你会学习如何手搓大模型，了解大模型的基本架构、训练和指令微调，从零开始
+- 不知道如何开启你的第一个项目？从这里学习好的的GitHub项目结构，养成良好的项目开发规范，创建你的第一个LLM仓库
+- 总是不满意你的README？学习如何编写结构清晰的README文件，此文档就可以作为一个简洁但值得借鉴的README模板
 
 ## 🚀 快速开始
 
@@ -318,7 +318,7 @@ model = torch.compile(model)
    - [tiktoken](https://github.com/openai/tiktoken) - 快速 BPE 分词器
 
 3. **推荐学习资源**:
-   - [LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch) - 本项目主要参考
+   - [《从零构建大模型》](https://github.com/rasbt/LLMs-from-scratch) - 本项目主要参考
 
 ## 📄 许可证
 
