@@ -1,5 +1,18 @@
 # my-LLM-from-scratch
 
+> ⚠️ **DEPRECATED — 本仓库已停止维护**
+>
+> 请移步 [**my-llm-from-scratch-v2**](https://github.com/tochikoma777/my-llm-from-scratch-v2)。
+>
+> v2 是完全重写，主要变化：
+> - 新增与 HuggingFace GPT-2 的**逐层数值对齐验证**（fp64 误差 2.8e-13）——
+>   证明实现正确，而不只是"能跑"
+> - OpenAI TF / HuggingFace **双路径权重加载**，并交叉验证（位级一致）
+> - KV cache、学习率调度、perplexity、checkpoint 续训、混合精度
+> - 完整测试套件（105 个）与工程化配置（ruff / mypy / pre-commit / CI）
+>
+> 本仓库保留作为学习过程的原始记录。
+
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
